@@ -1,0 +1,15 @@
+services:
+  course-platform:
+    build: .
+    container_name: course-platform
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      TOKEN_SECRET: "please-change-this-secret-before-use"
+      PORT: "3000"
+      DATA_DIR: "/app/data"
+      UPLOAD_DIR: "/app/uploads"
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads

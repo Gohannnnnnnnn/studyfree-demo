@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: studyfree-demo
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm install
+    startCommand: npm run start:demo
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: TOKEN_SECRET
+        generateValue: true
+      - key: DATA_DIR
+        value: /tmp/studyfree-data
+      - key: UPLOAD_DIR
+        value: /tmp/studyfree-uploads
+      - key: MAX_BODY_SIZE
+        value: "10737418240"

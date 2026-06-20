@@ -1,0 +1,23 @@
+{
+  "name": "course-learning-platform",
+  "version": "0.1.0",
+  "private": true,
+  "productName": "StudyFree",
+  "description": "Free Windows-ready course learning platform for teachers and students.",
+  "main": "desktop/main.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "desktop": "electron .",
+    "package:windows": "set \"ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/\" && set \"ELECTRON_GET_NO_PROGRESS=1\" && electron-packager . StudyFree --platform=win32 --arch=x64 --out=release --overwrite --asar --prune=true --ignore=\"^/(data|uploads|release|tests|docs|server\\\\.log|server\\\\.err\\\\.log)$\"",
+    "test": "node --test tests/*.test.js",
+    "start:demo": "node scripts/start-demo.js",
+    "seed:demo": "node scripts/seed-demo.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.0.1",
+    "electron": "^42.4.1"
+  }
+}
