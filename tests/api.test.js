@@ -243,6 +243,75 @@ test('lets teachers publish a course, upload a section file, and view student pr
   assert.equal(progressReport.data.progress[0].percent, 80);
 });
 
+
+test('lets course owners delete task points and clears related progress', async () => {
+  const teacherToken = await createApprovedTeacher({ email: 'section-owner@example.com' });
+  const otherTeacherToken = await createApprovedTeacher({ email: 'other-section-teacher@example.com' });
+
+  const course = await api('/api/courses', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${teacherToken}` },
+    body: {
+      title: 'Task Point Course',
+      description: 'Delete task point regression',
+      className: '一年级',
+      published: true
+    }
+  });
+  assert.equal(course.response.status, 201);
+
+  const firstSection = await api(`/api/courses/${course.data.course.id}/sections`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${teacherToken}` },
+    body: { title: 'First task', contentType: 'text', textContent: 'Keep learning' }
+  });
+  assert.equal(firstSection.response.status, 201);
+
+  await api('/api/register', {
+    method: 'POST',
+    body: {
+      role: 'student',
+      name: 'Progress Student',
+      email: 'progress-student@example.com',
+      password: 'student123',
+      className: '一年级',
+      inviteCode: 'STUDENT2026'
+    }
+  });
+  const studentToken = await login('progress-student@example.com', 'student123', 'student');
+  const progress = await api('/api/progress', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${studentToken}` },
+    body: { courseId: course.data.course.id, sectionId: firstSection.data.section.id, percent: 100 }
+  });
+  assert.equal(progress.response.status, 200);
+
+  const blocked = await api(`/api/courses/${course.data.course.id}/sections/${firstSection.data.section.id}`, {
+    method: 'DELETE',
+    headers: { authorization: `Bearer ${otherTeacherToken}` }
+  });
+  assert.equal(blocked.response.status, 404);
+
+  const deleted = await api(`/api/courses/${course.data.course.id}/sections/${firstSection.data.section.id}`, {
+    method: 'DELETE',
+    headers: { authorization: `Bearer ${teacherToken}` }
+  });
+  assert.equal(deleted.response.status, 200);
+  assert.equal(deleted.data.section.id, firstSection.data.section.id);
+
+  const detail = await api(`/api/courses/${course.data.course.id}`, {
+    headers: { authorization: `Bearer ${teacherToken}` }
+  });
+  assert.equal(detail.response.status, 200);
+  assert.equal(detail.data.course.sections.length, 0);
+
+  const progressReport = await api(`/api/progress/course/${course.data.course.id}`, {
+    headers: { authorization: `Bearer ${teacherToken}` }
+  });
+  assert.equal(progressReport.response.status, 200);
+  assert.equal(progressReport.data.progress.length, 0);
+});
+
 test('uses a 10GB default request body limit and honors smaller configured upload limits', async () => {
   assert.equal(DEFAULT_MAX_BODY_SIZE, 10 * 1024 * 1024 * 1024);
 

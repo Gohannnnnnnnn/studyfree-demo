@@ -196,6 +196,14 @@ function createServer(options = {}) {
       return sendJson(res, 200, { course });
     }
 
+
+    if (segments[0] === 'api' && segments[1] === 'courses' && segments[3] === 'sections' && segments.length === 5 && method === 'DELETE') {
+      const user = await requireUser(req, url);
+      const section = store.deleteSection(user, segments[2], segments[4]);
+      if (!section) throw Object.assign(new Error('Section not found.'), { status: 404 });
+      return sendJson(res, 200, { section });
+    }
+
     if (segments[0] === 'api' && segments[1] === 'courses' && segments[3] === 'sections' && method === 'POST') {
       const user = await requireUser(req, url);
       const contentType = req.headers['content-type'] || '';

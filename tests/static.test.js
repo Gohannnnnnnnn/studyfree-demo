@@ -27,11 +27,14 @@ test('serves the browser app shell and static assets', async () => {
     assert.equal(app.status, 200);
     assert.equal(css.status, 200);
     assert.match(await home.text(), /id="app"/);
+    assert.match(appText, /医邦教育/);
     assert.match(appText, /学生端/);
     assert.match(appText, /课堂签到/);
     assert.match(appText, /课程空间/);
     assert.match(appText, /所有课程/);
     assert.match(appText, /删除课程/);
+    assert.match(appText, /删除任务点/);
+    assert.match(appText, /deleteSection/);
     assert.match(appText, /deleteCourse/);
     assert.match(appText, /在线播放/);
     assert.match(appText, /data-video-progress/);
@@ -79,7 +82,7 @@ test('defines Windows desktop shell and packaging scripts', () => {
   const desktopMainPath = path.join(rootDir, 'desktop', 'main.js');
 
   assert.equal(packageJson.main, 'desktop/main.js');
-  assert.equal(packageJson.productName, 'StudyFree');
+  assert.equal(packageJson.productName, '医邦教育');
   assert.match(packageJson.scripts.desktop, /electron \./);
   assert.match(packageJson.scripts['package:windows'], /electron-packager/);
   assert.match(packageJson.scripts['package:windows'], /--platform=win32/);
@@ -89,7 +92,7 @@ test('defines Windows desktop shell and packaging scripts', () => {
   assert.match(desktopMain, /startLocalAppServer/);
   assert.match(desktopMain, /BrowserWindow/);
   assert.match(desktopMain, /app\.getPath\('userData'\)/);
-  assert.match(desktopMain, /StudyFree/);
+  assert.match(desktopMain, /医邦教育/);
 });
 
 test('provides Windows launch and packaging scripts', () => {
@@ -101,11 +104,11 @@ test('provides Windows launch and packaging scripts', () => {
   assert.match(runScript, /npm\.cmd run desktop/);
   assert.match(runScript, /where node/);
   assert.match(runScript, /ELECTRON_MIRROR/);
-  assert.match(runScript, /StudyFree/);
+  assert.match(runScript, /医邦教育/);
   assert.match(buildScript, /npm\.cmd install/);
   assert.match(buildScript, /npm\.cmd run package:windows/);
   assert.match(buildScript, /ELECTRON_MIRROR/);
-  assert.match(buildScript, /release\\StudyFree-win32-x64\\StudyFree\.exe/);
+  assert.match(buildScript, /release\\医邦教育-win32-x64\\医邦教育\.exe/);
   assert.match(gitignore, /release\//);
 });
 
@@ -113,10 +116,10 @@ test('documents Windows desktop usage and packaging', () => {
   const rootDir = path.join(__dirname, '..');
   const readme = fs.readFileSync(path.join(rootDir, 'README.md'), 'utf8');
 
-  assert.match(readme, /StudyFree/);
+  assert.match(readme, /医邦教育/);
   assert.match(readme, /run_windows\.bat/);
   assert.match(readme, /build_windows\.bat/);
-  assert.match(readme, /release\\StudyFree-win32-x64\\StudyFree\.exe/);
+  assert.match(readme, /release\\医邦教育-win32-x64\\医邦教育\.exe/);
   assert.match(readme, /不会破解会员/);
   assert.match(readme, /不会使用学习通私有接口/);
 });

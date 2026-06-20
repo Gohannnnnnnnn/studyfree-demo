@@ -11,7 +11,7 @@ function createMainWindow(url) {
     height: 820,
     minWidth: 1024,
     minHeight: 680,
-    title: 'StudyFree',
+    title: '医邦教育',
     backgroundColor: '#f7f9fc',
     autoHideMenuBar: true,
     webPreferences: {
@@ -53,7 +53,7 @@ async function stopRuntime() {
 
 app.whenReady().then(() => {
   startDesktopApp().catch((error) => {
-    dialog.showErrorBox('StudyFree failed to start', error.stack || error.message);
+    dialog.showErrorBox('医邦教育 failed to start', error.stack || error.message);
     app.quit();
   });
 });

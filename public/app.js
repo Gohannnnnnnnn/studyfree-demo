@@ -272,7 +272,7 @@ function renderAuth() {
   app.innerHTML = html`
     <section class="login-layout">
       <div class="brand-panel">
-        <div class="brand-mark">StudyFree</div>
+        <div class="brand-mark">医邦教育</div>
         <h1>清晰、轻量的课程学习空间</h1>
         <p>把课程资料、视频学习、签到、作业和统计拆成独立入口，教师和学生都能更快找到当前要做的事。</p>
         <div class="auth-feature-list">
@@ -770,7 +770,10 @@ function taskPointModule(isTeacher) {
           <div class="section-item">
             <div class="item-title">
               <h4>${escapeHtml(section.order)}. ${escapeHtml(section.title)}</h4>
-              <span class="pill">${escapeHtml(section.contentType || 'text')}</span>
+              <div class="item-actions">
+                <span class="pill">${escapeHtml(section.contentType || 'text')}</span>
+                ${isTeacher ? `<button class="small danger" type="button" data-delete-section="${section.id}" data-section-title="${escapeHtml(section.title)}">删除任务点</button>` : ''}
+              </div>
             </div>
             <p class="muted">${escapeHtml(section.textContent || '暂无说明')}</p>
             ${renderMaterial(section, token)}
@@ -1312,6 +1315,16 @@ document.addEventListener('click', async (event) => {
       setMessage('课程已删除');
       return;
     }
+
+    if (button.dataset.deleteSection) {
+      const sectionTitle = button.dataset.sectionTitle || '删除任务点';
+      if (!confirm(`确定删除“${sectionTitle}”吗？该任务点的学习进度和关联资料也会一起移除。`)) return;
+      await api(`/api/courses/${state.selectedCourse.id}/sections/${button.dataset.deleteSection}`, { method: 'DELETE' });
+      await selectCourse(state.selectedCourse.id, state.courseTool);
+      setMessage('删除任务点已删除');
+      return;
+    }
+
     if (button.dataset.progress) {
       await api('/api/progress', {
         method: 'POST',

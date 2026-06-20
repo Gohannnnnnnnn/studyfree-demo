@@ -23,5 +23,5 @@ const server = createServer({
 });
 
 server.listen(port, () => {
-  console.log('StudyFree demo running at http://localhost:' + port);
+  console.log('Yibang Education demo running at http://localhost:' + port);
 });

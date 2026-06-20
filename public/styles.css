@@ -821,6 +821,14 @@ th {
   gap: 12px;
 }
 
+.item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .feed-list,
 .mini-list {
   display: grid;

@@ -333,6 +333,36 @@ class JsonStore {
     return course;
   }
 
+
+  deleteSection(user, courseId, sectionId) {
+    const course = this.findCourse(courseId);
+    if (!course || !this.canManageCourse(user, course)) return null;
+    const section = this.data.sections.find((candidate) => candidate.id === sectionId && candidate.courseId === courseId);
+    if (!section) return null;
+
+    this.data.sections = this.data.sections.filter((candidate) => candidate.id !== sectionId);
+    this.data.progress = this.data.progress.filter((record) => record.sectionId !== sectionId);
+
+    if (section.fileId && !this.data.sections.some((candidate) => candidate.fileId === section.fileId)) {
+      const file = this.findFile(section.fileId);
+      if (file) {
+        const storedPath = this.filePathFor(file);
+        if (fs.existsSync(storedPath)) fs.rmSync(storedPath, { force: true });
+      }
+      this.data.files = this.data.files.filter((file) => file.id !== section.fileId);
+    }
+
+    const remainingSections = this.data.sections
+      .filter((candidate) => candidate.courseId === courseId)
+      .sort((a, b) => a.order - b.order);
+    remainingSections.forEach((candidate, index) => {
+      candidate.order = index + 1;
+    });
+
+    this.save();
+    return section;
+  }
+
   findCourse(courseId) {
     return this.data.courses.find((course) => course.id === courseId) || null;
   }
