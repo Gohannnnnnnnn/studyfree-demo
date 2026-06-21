@@ -40,6 +40,18 @@ test('serves the browser app shell and static assets', async () => {
     assert.match(appText, /data-video-progress/);
     assert.match(appText, /syncVideoProgress/);
     assert.match(appText, /quick-upload-form/);
+    assert.match(appText, /polished-login/);
+    assert.match(appText, /role-card-tabs/);
+    assert.match(appText, /微信一键登录/);
+    assert.match(appText, /teacher-dashboard-grid/);
+    assert.match(appText, /course-detail-header/);
+    assert.match(appText, /course-tabs/);
+    assert.match(appText, /上传资料/);
+    assert.match(appText, /作业管理/);
+    assert.match(appText, /资料库/);
+    assert.match(appText, /task-row/);
+    assert.match(appText, /data-section-action/);
+    assert.match(appText, /focus-section-form/);
     assert.match(appText, /batchUploadMaterials/);
     assert.match(appText, /inferContentTypeFromFile/);
     assert.match(appText, /multiple/);
@@ -70,6 +82,10 @@ test('serves the browser app shell and static assets', async () => {
     assert.match(cssText, /\.dashboard-grid/);
     assert.match(cssText, /\.workbench-list/);
     assert.match(cssText, /\.quick-upload-panel/);
+    assert.match(cssText, /\.polished-login/);
+    assert.match(cssText, /\.teacher-dashboard-grid/);
+    assert.match(cssText, /\.course-tabs/);
+    assert.match(cssText, /\.task-row/);
   } finally {
     await new Promise((resolve) => server.close(resolve));
     fs.rmSync(root, { recursive: true, force: true });

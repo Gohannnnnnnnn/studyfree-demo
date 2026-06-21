@@ -136,8 +136,17 @@ function updateSavedLogin(role, email, password, remember) {
   localStorage.removeItem(savedLoginKey(role));
 }
 
+
 function roleLabel(role) {
-  return ({ student: '学生端', teacher: '教师端', admin: '管理员' })[role] || role;
+  return ({ student: '学生端', teacher: '教师端', admin: '管理员端' })[role] || role;
+}
+
+function roleIcon(role) {
+  return ({ student: '学', teacher: '师', admin: '管' })[role] || '用';
+}
+
+function roleSubtitle(role) {
+  return ({ student: '我的学习', teacher: '教师端', admin: '管理端' })[role] || roleLabel(role);
 }
 
 function contentTypeLabel(type) {
@@ -244,7 +253,7 @@ async function selectCourse(courseId, tool = 'overview') {
   const data = await api(`/api/courses/${courseId}`);
   state.selectedCourse = data.course;
   state.courseExtras = await loadCourseExtras(courseId);
-  state.courseTool = tool;
+  state.courseTool = state.user?.role === 'teacher' && tool === 'overview' ? 'sections' : tool;
   state.view = 'course';
   render();
 }
@@ -262,37 +271,42 @@ function logout(show = true) {
   render();
 }
 
+
 function renderAuth() {
-  const authFeatures = [
-    ['课程', '资料、视频与任务点'],
-    ['互动', '签到、讨论、测验'],
-    ['统计', '进度与视频观看']
-  ];
-  app.className = 'app-shell';
+  const roles = ['student', 'teacher', 'admin'];
+  app.className = 'app-shell auth-shell';
   app.innerHTML = html`
     <section class="login-layout">
-      <div class="brand-panel">
-        <div class="brand-mark">医邦教育</div>
-        <h1>清晰、轻量的课程学习空间</h1>
-        <p>把课程资料、视频学习、签到、作业和统计拆成独立入口，教师和学生都能更快找到当前要做的事。</p>
-        <div class="auth-feature-list">
-          ${authFeatures.map(([title, text]) => `<div><strong>${title}</strong><span>${text}</span></div>`).join('')}
-        </div>
-      </div>
       <div class="login-panel">
-        <div class="auth-card">
-          <div class="auth-heading">
-            <h2>${state.mode === 'login' || state.role === 'admin' ? '登录账号' : '注册账号'}</h2>
-            <p>${roleLabel(state.role)} · 本地免费版</p>
+        <div class="auth-card polished-login">
+          <div class="auth-heading centered">
+            <h1>医邦教育</h1>
+            <p>在线课程学习平台</p>
           </div>
-          <div class="role-tabs">
-            ${['student', 'teacher', 'admin'].map((role) => `<button class="${state.role === role ? 'active' : ''}" data-role="${role}">${roleLabel(role)}</button>`).join('')}
-          </div>
-          <div class="mode-tabs" style="margin-top: 12px">
-            <button class="${state.mode === 'login' ? 'active' : ''}" data-mode="login">登录</button>
-            <button class="${state.mode === 'register' ? 'active' : ''}" data-mode="register" ${state.role === 'admin' ? 'disabled' : ''}>注册</button>
+          <div class="role-tabs role-card-tabs" aria-label="选择登录端口">
+            ${roles.map((role) => html`
+              <button type="button" class="role-card ${state.role === role ? 'active' : ''}" data-role="${role}">
+                <span class="role-icon">${roleIcon(role)}</span>
+                <strong>${roleLabel(role)}</strong>
+              </button>
+            `).join('')}
           </div>
           ${state.mode === 'login' || state.role === 'admin' ? loginForm() : registerForm()}
+          <button type="button" class="wechat-login" data-action="wechat-demo">微信一键登录</button>
+          <div class="auth-switch">
+            <span>${state.mode === 'login' ? '还没有账号？' : '已有账号？'}</span>
+            <button type="button" class="link-button" data-mode="${state.mode === 'login' ? 'register' : 'login'}" ${state.role === 'admin' ? 'disabled' : ''}>${state.mode === 'login' ? '注册新账号' : '返回登录'}</button>
+          </div>
+          <div class="demo-accounts">
+            <strong>演示账号</strong>
+            <dl>
+              <dt>学生端</dt><dd>demo-student@example.com</dd>
+              <dt>教师端</dt><dd>demo-teacher@example.com</dd>
+              <dt>管理员端</dt><dd>admin@example.com</dd>
+              <dt>对应密码</dt><dd>student123 / teacher123 / admin123456</dd>
+            </dl>
+          </div>
+          <div class="version-label">医邦教育 v1.0</div>
           ${notice()}
         </div>
       </div>
@@ -300,17 +314,17 @@ function renderAuth() {
   `;
 }
 
+
 function loginForm() {
   const saved = savedLoginFor();
   const defaultEmail = state.role === 'admin' ? 'admin@example.com' : '';
   const defaultPassword = state.role === 'admin' ? 'admin123456' : '';
   return html`
-    <form class="form-grid" id="login-form">
-      <label>邮箱<input name="email" type="email" required value="${escapeHtml(saved.email || defaultEmail)}"></label>
-      <label>密码<input name="password" type="password" required value="${escapeHtml(saved.password || defaultPassword)}"></label>
+    <form class="form-grid login-form" id="login-form">
+      <label>邮箱地址<input name="email" type="email" required placeholder="请输入邮箱地址" value="${escapeHtml(saved.email || defaultEmail)}"></label>
+      <label>登录密码<input name="password" type="password" required placeholder="请输入密码" value="${escapeHtml(saved.password || defaultPassword)}"></label>
       <label class="check-row"><input name="rememberCredentials" type="checkbox" ${saved.remember ? 'checked' : ''}> 保存账号和密码</label>
-      <button type="submit">进入${roleLabel(state.role)}</button>
-      <p class="muted form-help">默认邀请码：学生 STUDENT2026，教师 TEACHER2026。</p>
+      <button type="submit" class="primary-login">登录</button>
     </form>
   `;
 }
@@ -332,53 +346,84 @@ function registerForm() {
   `;
 }
 
+
 function renderAppShell(content) {
   app.className = 'app-shell';
   app.innerHTML = html`
     <section class="layout">
       <aside class="sidebar">
-        <h1>${roleLabel(state.user.role)}</h1>
-        <p>${escapeHtml(state.user.name)}<br>${escapeHtml(state.user.email)}</p>
+        <div class="sidebar-brand">
+          <strong>医邦教育</strong>
+          <span>${roleSubtitle(state.user.role)}</span>
+        </div>
         <nav class="nav">
-          ${navButton('courses', state.user.role === 'student' ? '我的课程' : '课程管理')}
-          ${state.user.role === 'teacher' ? navButton('progress', '学习统计') : ''}
-          ${state.user.role === 'admin' ? navButton('admin', '后台管理') : ''}
-          <button data-action="logout">退出登录</button>
+          ${shellNav()}
         </nav>
+        <div class="sidebar-user">
+          <span class="avatar">${escapeHtml((state.user.name || roleLabel(state.user.role)).slice(0, 1))}</span>
+          <div>
+            <strong>${escapeHtml(state.user.name)}</strong>
+            <small>${roleLabel(state.user.role)}</small>
+          </div>
+          <button class="icon-button" type="button" data-action="refresh" title="刷新">刷</button>
+          <button class="icon-button" type="button" data-action="logout" title="退出">出</button>
+        </div>
       </aside>
       <main class="content">${content}</main>
     </section>
   `;
 }
 
-function navButton(view, label) {
-  return `<button class="${state.view === view ? 'active' : ''}" data-view="${view}">${label}</button>`;
+function shellNav() {
+  if (state.user.role === 'teacher') {
+    return html`
+      ${navButton('courses', '工作台首页', '首')}
+      <button class="${state.view === 'course' ? 'active' : ''}" data-action="focus-courses"><span class="nav-icon">课</span><span>我的课程</span></button>
+      ${navButton('progress', '学习统计', '统')}
+    `;
+  }
+  if (state.user.role === 'admin') {
+    return html`
+      ${navButton('admin', '后台首页', '管')}
+      ${navButton('courses', '课程管理', '课')}
+    `;
+  }
+  return html`
+    ${navButton('courses', '我的课程', '课')}
+  `;
 }
+
+function navButton(view, label, icon = '') {
+  return '<button class="' + (state.view === view ? 'active' : '') + '" data-view="' + view + '"><span class="nav-icon">' + escapeHtml(icon || label.slice(0, 1)) + '</span><span>' + escapeHtml(label) + '</span></button>';
+}
+
+
 
 function topbar(title, subtitle = '') {
   return html`
     <div class="topbar">
       <div>
         <h2>${escapeHtml(title)}</h2>
-        ${subtitle ? `<div class="muted">${escapeHtml(subtitle)}</div>` : ''}
+        ${subtitle ? '<div class="muted">' + escapeHtml(subtitle) + '</div>' : ''}
       </div>
-      <div class="toolbar">
-        ${state.selectedCourse ? '<button class="secondary" data-view="courses">返回课程</button>' : ''}
-        <button class="secondary" data-action="refresh">刷新</button>
-      </div>
+      <div class="topbar-welcome">欢迎回来，${escapeHtml(state.user.name)}${state.user.role === 'teacher' ? ' 老师' : ''}</div>
     </div>
     ${notice()}
   `;
 }
 
+
 function summaryCards(items) {
-  return `<section class="stat-grid">${items.map((item) => html`
+  return '<section class="stat-grid">' + items.map((item) => html`
     <div class="stat-card">
-      <span>${escapeHtml(item.label)}</span>
-      <strong>${escapeHtml(item.value)}</strong>
-      <small>${escapeHtml(item.hint || '')}</small>
+      <span class="stat-icon">${escapeHtml(item.icon || '')}</span>
+      <div>
+        <strong>${escapeHtml(item.value)}</strong>
+        <span>${escapeHtml(item.label)}</span>
+        <small>${escapeHtml(item.hint || '')}</small>
+      </div>
     </div>
-  `).join('')}</section>`;
+  `).join('') + '</section>';
 }
 
 function workbenchList(items, renderItem, emptyText) {
@@ -504,6 +549,7 @@ function studentCourseDetail() {
   return courseDetail(false);
 }
 
+
 function renderTeacher() {
   if (state.view === 'course' && state.selectedCourse) {
     renderAppShell(teacherCourseDetail());
@@ -520,15 +566,18 @@ function renderTeacher() {
     recentInteractions: []
   };
   renderAppShell(html`
-    ${topbar('教学工作台', '快速建课、待批改作业、学生学习进度和最近互动')}
+    ${topbar('教师工作台', '课程、作业和互动集中处理')}
     ${summaryCards([
-      { label: '我的课程', value: dashboard.metrics.courses, hint: '教师创建' },
-      { label: '快速建课', value: '3步', hint: '基础信息/年级/发布' },
-      { label: '待批改作业', value: dashboard.metrics.pendingReviews, hint: '学生已提交未反馈' },
-      { label: '最近互动', value: dashboard.metrics.recentInteractions, hint: '讨论和课堂问题' }
+      { icon: '课', label: '我的课程', value: dashboard.metrics.courses, hint: '教师创建' },
+      { icon: '改', label: '待批改作业', value: dashboard.metrics.pendingReviews, hint: '学生已提交未反馈' },
+      { icon: '互', label: '最近互动', value: dashboard.metrics.recentInteractions, hint: '讨论和签到动态' }
     ])}
-    <section class="dashboard-grid">
-      <section class="panel dashboard-panel">
+    <div class="teacher-action-bar">
+      <button type="button" data-action="focus-create">+ 快速建课</button>
+      <button type="button" class="secondary" data-action="focus-courses">管理课程</button>
+    </div>
+    <section class="teacher-dashboard-grid">
+      <section class="panel dashboard-panel pending-panel">
         <h3>待批改作业</h3>
         ${workbenchList(dashboard.pendingReviews, (item) => html`
           <button type="button" class="workbench-item" data-course="${item.courseId}">
@@ -536,55 +585,42 @@ function renderTeacher() {
             <strong>${escapeHtml(item.assignmentTitle)}</strong>
             <small>${escapeHtml(item.courseTitle)}</small>
           </button>
-        `, '暂无待批改作业。')}
+        `, '暂无待批改作业')}
       </section>
-      <section class="panel dashboard-panel">
-        <h3>学生学习进度</h3>
-        ${workbenchList(dashboard.progressSnapshot, (item) => html`
-          <button type="button" class="workbench-item" data-report="${item.courseId}">
-            <span>${escapeHtml(item.activeStudents)} 名学生</span>
-            <strong>${escapeHtml(item.courseTitle)}</strong>
-            <small>${escapeHtml(item.completedRecords)} 条完成记录 / ${escapeHtml(item.sectionCount)} 个任务点</small>
-          </button>
-        `, '暂无学习进度。')}
-      </section>
-      <section class="panel dashboard-panel">
+      <section class="panel dashboard-panel interaction-panel">
         <h3>最近互动</h3>
         ${workbenchList(dashboard.recentInteractions, (item) => html`
-          <button type="button" class="workbench-item" data-course="${item.courseId}">
+          <button type="button" class="workbench-item compact" data-course="${item.courseId}">
             <span>${escapeHtml(item.authorName)}</span>
             <strong>${escapeHtml(item.title)}</strong>
             <small>${escapeHtml(item.courseTitle)}</small>
           </button>
-        `, '暂无讨论互动。')}
+        `, '暂无讨论互动')}
       </section>
     </section>
-    <div class="split">
-      <section class="panel">
-        <h3>快速建课</h3>
-        <div class="course-create-steps">
-          <span>1 基础信息</span>
-          <span>2 适用年级</span>
-          <span>3 发布设置</span>
-        </div>
-        <form class="form-grid" id="course-form">
-          <label>课程名称<input name="title" required></label>
-          <label>适用年级<select name="className">${gradeOptions('', { includeAll: true })}</select></label>
-          <label>课程简介<textarea name="description"></textarea></label>
-          <label><span><input name="published" type="checkbox" style="width:auto"> 创建后立即发布</span></label>
-          <button type="submit">创建课程</button>
-        </form>
-      </section>
-      <section>
-        <div class="section-heading">
-          <h3>我的课程</h3>
-          <span>${escapeHtml(state.courses.length)} 门</span>
-        </div>
-        <div class="grid">
-          ${state.courses.map(courseCard).join('') || '<div class="panel">还没有课程。</div>'}
-        </div>
-      </section>
-    </div>
+    <section class="teacher-courses-section" id="teacher-courses-section">
+      <div class="section-heading">
+        <h3>我的课程</h3>
+        <span>${escapeHtml(state.courses.length)} 门</span>
+      </div>
+      <div class="teacher-course-manager">
+        <section class="panel compact-create" id="quick-create-panel">
+          <h3>快速建课</h3>
+          <form class="form-grid" id="course-form">
+            <label>课程名称<input name="title" required></label>
+            <label>适用年级<select name="className">${gradeOptions('', { includeAll: true })}</select></label>
+            <label>课程简介<textarea name="description"></textarea></label>
+            <label class="check-row"><input name="published" type="checkbox"> 创建后立即发布</label>
+            <button type="submit">创建课程</button>
+          </form>
+        </section>
+        <section class="course-list-surface">
+          <div class="grid compact-course-grid">
+            ${state.courses.map(courseCard).join('') || '<div class="panel empty-state">还没有课程。</div>'}
+          </div>
+        </section>
+      </div>
+    </section>
   `);
 }
 
@@ -592,12 +628,32 @@ function teacherCourseDetail() {
   return courseDetail(true);
 }
 
+
 function courseDetail(isTeacher) {
+  if (!isTeacher) {
+    const course = state.selectedCourse;
+    return html`
+      ${topbar(course.title, course.description)}
+      ${courseHero(course)}
+      ${courseToolGrid(isTeacher)}
+      ${renderCourseToolPanel(isTeacher)}
+    `;
+  }
   const course = state.selectedCourse;
   return html`
-    ${topbar(course.title, course.description)}
-    ${courseHero(course)}
-    ${isTeacher ? quickUploadPanel() : ''}
+    <section class="course-detail-header">
+      <div>
+        <button type="button" class="back-link" data-view="courses">← 返回课程列表</button>
+        <h2>${escapeHtml(course.title)}</h2>
+        <p>${escapeHtml(course.description || '暂无课程简介')}</p>
+      </div>
+      <div class="course-header-actions">
+        <button type="button" class="secondary" data-course-tool="settings">编辑课程</button>
+        <button type="button" class="warn-button" data-publish="${course.published ? 'false' : 'true'}">${course.published ? '下架课程' : '发布课程'}</button>
+        <button type="button" class="danger" data-delete-course="${course.id}" data-course-title="${escapeHtml(course.title)}">删除课程</button>
+      </div>
+    </section>
+    ${notice()}
     ${courseToolGrid(isTeacher)}
     ${renderCourseToolPanel(isTeacher)}
   `;
@@ -640,18 +696,28 @@ function courseHero(course) {
   `;
 }
 
+
 function courseToolDefinitions(isTeacher) {
   const extras = state.courseExtras;
+  if (isTeacher) {
+    return [
+      { id: 'sections', title: '任务点', count: courseCountText(state.selectedCourse.sections.length, '个') },
+      { id: 'upload', title: '上传资料', count: MAX_UPLOAD_SIZE_LABEL },
+      { id: 'progress', title: '学习进度', count: '查看' },
+      { id: 'assignments', title: '作业管理', count: courseCountText(extras.assignments.length, '项') },
+      { id: 'announcements', title: '公告', count: courseCountText(extras.announcements.length, '条') },
+      { id: 'quizzes', title: '测验', count: courseCountText(extras.quizzes.length, '题') },
+      { id: 'materials', title: '资料库', count: courseCountText(state.selectedCourse.sections.filter((section) => section.fileId).length, '份') }
+    ];
+  }
   return [
-    { id: 'overview', title: '课程概览', desc: '课程状态、学习入口和模块数量', count: courseCountText(state.selectedCourse.sections.length + extras.assignments.length + extras.checkins.length + extras.quizzes.length, '项') },
-    ...(isTeacher ? [{ id: 'settings', title: '课程发布', desc: '发布、下架和课程可见性', count: state.selectedCourse.published ? '已发布' : '未发布' }] : []),
+    { id: 'overview', title: '公告', desc: '课程通知和学习提醒', count: courseCountText(extras.announcements.length, '条') },
     { id: 'sections', title: '任务点', desc: '视频、文档、图片和文字资料', count: courseCountText(state.selectedCourse.sections.length, '个') },
-    { id: 'materials', title: '资料', desc: '汇总视频、文档和图片资源', count: courseCountText(state.selectedCourse.sections.filter((section) => section.fileId).length, '份') },
-    { id: 'announcements', title: '课程公告', desc: '课程通知和学习提醒', count: courseCountText(extras.announcements.length, '条') },
     { id: 'assignments', title: '作业', desc: '发布、提交和查看作业', count: courseCountText(extras.assignments.length, '项') },
-    { id: 'checkins', title: '课堂签到', desc: '发起签到或输入签到码', count: courseCountText(extras.checkins.length, '次') },
-    { id: 'quizzes', title: '随堂测验', desc: '课堂小测和自动评分', count: courseCountText(extras.quizzes.length, '题') },
-    { id: 'discussions', title: '讨论区', desc: '提问、回复和课堂讨论', count: courseCountText(extras.discussions.length, '条') }
+    { id: 'quizzes', title: '测验', desc: '课堂小测和自动评分', count: courseCountText(extras.quizzes.length, '题') },
+    { id: 'discussions', title: '讨论', desc: '提问、回复和课堂讨论', count: courseCountText(extras.discussions.length, '条') },
+    { id: 'checkins', title: '签到', desc: '输入签到码', count: courseCountText(extras.checkins.length, '次') },
+    { id: 'materials', title: '资料', desc: '汇总视频、文档和图片资源', count: courseCountText(state.selectedCourse.sections.filter((section) => section.fileId).length, '份') }
   ];
 }
 
@@ -659,23 +725,29 @@ function courseCountText(value, unit) {
   return `${value}${unit}`;
 }
 
+
 function courseToolGrid(isTeacher) {
+  const className = isTeacher ? 'course-tabs' : 'course-tool-grid';
   return html`
-    <section class="course-tool-grid">
+    <section class="${className}">
       ${courseToolDefinitions(isTeacher).map((tool) => html`
         <button type="button" class="tool-card ${state.courseTool === tool.id ? 'active' : ''}" data-course-tool="${tool.id}">
           <span>${escapeHtml(tool.count)}</span>
           <strong>${escapeHtml(tool.title)}</strong>
-          <small>${escapeHtml(tool.desc)}</small>
+          ${tool.desc ? '<small>' + escapeHtml(tool.desc) + '</small>' : ''}
         </button>
       `).join('')}
     </section>
   `;
 }
 
+
 function renderCourseToolPanel(isTeacher) {
-  const tool = state.courseTool || 'overview';
+  let tool = state.courseTool || (isTeacher ? 'sections' : 'overview');
+  if (isTeacher && tool === 'overview') tool = 'sections';
   if (tool === 'settings' && isTeacher) return courseControlModule();
+  if (tool === 'upload' && isTeacher) return quickUploadPanel();
+  if (tool === 'progress' && isTeacher) return courseProgressModule();
   if (tool === 'sections') return taskPointModule(isTeacher);
   if (tool === 'materials') return materialsModule(isTeacher);
   if (tool === 'announcements') return announcementModule(isTeacher);
@@ -684,6 +756,22 @@ function renderCourseToolPanel(isTeacher) {
   if (tool === 'quizzes') return quizModule(isTeacher);
   if (tool === 'discussions') return discussionModule(isTeacher);
   return courseOverviewModule(isTeacher);
+}
+
+function courseProgressModule() {
+  const course = state.selectedCourse;
+  return html`
+    <section class="panel module">
+      <div class="module-header">
+        <div>
+          <h3>学习进度</h3>
+          <p class="muted">查看本课程学生的任务点完成和视频观看情况。</p>
+        </div>
+        <button type="button" data-report="${course.id}">刷新进度</button>
+      </div>
+      <div id="report-panel" class="progress-report-placeholder">点击“刷新进度”查看学生学习记录。</div>
+    </section>
+  `;
 }
 
 function materialsModule(isTeacher) {
@@ -729,60 +817,88 @@ function courseOverviewModule(isTeacher) {
   `;
 }
 
+
 function courseControlModule() {
+  const course = state.selectedCourse;
   return html`
     <section class="panel module">
-      <h3>课程发布</h3>
-      <p class="muted">发布后，符合年级条件的学生可以进入课程空间。</p>
-      <div class="toolbar">
-        <button data-publish="true">发布课程</button>
-        <button class="secondary" data-publish="false">下架课程</button>
+      <div class="module-header">
+        <div>
+          <h3>编辑课程</h3>
+          <p class="muted">修改课程基本信息、适用年级和发布状态。</p>
+        </div>
       </div>
+      <form class="form-grid compact-form admin-course-form" data-course="${course.id}">
+        <div class="form-row">
+          <label>课程名称<input name="title" required value="${escapeHtml(course.title)}"></label>
+          <label>适用年级<select name="className">${gradeOptions(course.className, { includeAll: true })}</select></label>
+        </div>
+        <label>课程简介<textarea name="description">${escapeHtml(course.description || '')}</textarea></label>
+        <label>发布状态
+          <select name="published">
+            <option value="true" ${course.published ? 'selected' : ''}>发布</option>
+            <option value="false" ${!course.published ? 'selected' : ''}>下架</option>
+          </select>
+        </label>
+        <button type="submit">保存课程</button>
+      </form>
     </section>
   `;
 }
+
 
 function taskPointModule(isTeacher) {
   const token = encodeURIComponent(state.token);
   const course = state.selectedCourse;
   return html`
-    <section class="panel module">
-      <h3>任务点</h3>
+    <section class="panel module task-module">
+      <div class="module-header">
+        <div>
+          <h3>课程任务点</h3>
+          <p class="muted">视频、文档、图片会作为任务点呈现给学生。</p>
+        </div>
+        ${isTeacher ? '<button type="button" data-action="focus-section-form">+ 添加任务点</button>' : ''}
+      </div>
       ${isTeacher ? html`
-        <form class="form-grid compact-form" id="section-form">
-          <label>章节标题<input name="title" required></label>
-          <label>资料类型
-            <select name="contentType">
-              <option value="text">文本</option>
-              <option value="video">视频</option>
-              <option value="document">文档</option>
-              <option value="image">图片</option>
-            </select>
-          </label>
+        <form class="form-grid compact-form section-form-inline" id="section-form">
+          <div class="form-row">
+            <label>任务标题<input name="title" required></label>
+            <label>资料类型
+              <select name="contentType">
+                <option value="text">文本</option>
+                <option value="video">视频</option>
+                <option value="document">文档</option>
+                <option value="image">图片</option>
+              </select>
+            </label>
+          </div>
           <label>文字说明<textarea name="textContent"></textarea></label>
           <label>上传文件<input name="file" type="file" accept="video/*,image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"></label>
-          <p class="muted form-help">本地版单个上传文件默认不超过 ${MAX_UPLOAD_SIZE_LABEL}。</p>
-          <button type="submit">添加任务点</button>
+          <div class="form-footer"><span class="muted">单个上传文件不超过 ${MAX_UPLOAD_SIZE_LABEL}</span><button type="submit">添加任务点</button></div>
         </form>
       ` : ''}
-      <div class="section-list">
+      <div class="task-list">
         ${course.sections.map((section) => html`
-          <div class="section-item">
-            <div class="item-title">
-              <h4>${escapeHtml(section.order)}. ${escapeHtml(section.title)}</h4>
-              <div class="item-actions">
-                <span class="pill">${escapeHtml(section.contentType || 'text')}</span>
-                ${isTeacher ? `<button class="small danger" type="button" data-delete-section="${section.id}" data-section-title="${escapeHtml(section.title)}">删除任务点</button>` : ''}
-              </div>
+          <div class="task-row">
+            <div class="task-icon">${section.contentType === 'video' ? '播' : section.contentType === 'image' ? '图' : section.contentType === 'document' ? '文' : '字'}</div>
+            <div class="task-main">
+              <strong>${escapeHtml(section.order)}. ${escapeHtml(section.title)}</strong>
+              <small>${escapeHtml(contentTypeLabel(section.contentType))}${section.textContent ? ' ? ' + escapeHtml(section.textContent) : ''}</small>
+              ${!isTeacher ? renderMaterial(section, token) : ''}
             </div>
-            <p class="muted">${escapeHtml(section.textContent || '暂无说明')}</p>
-            ${renderMaterial(section, token)}
-            ${!isTeacher ? html`
-              <div class="toolbar" style="margin-top: 10px">
+            <div class="task-actions">
+              <span class="pill ok">已发布</span>
+              ${isTeacher ? html`
+                <button class="small warn-button" type="button" data-section-action="offline" data-section-title="${escapeHtml(section.title)}">下架</button>
+                <button class="small secondary" type="button" data-section-action="edit" data-section-title="${escapeHtml(section.title)}">编辑</button>
+                <button class="small secondary" type="button" data-section-action="view" data-section-title="${escapeHtml(section.title)}">查看</button>
+                <button class="small secondary" type="button" data-section-action="assign" data-section-title="${escapeHtml(section.title)}">布置作业</button>
+                <button class="small danger" type="button" data-delete-section="${section.id}" data-section-title="${escapeHtml(section.title)}">删除</button>
+              ` : html`
                 <button class="small" data-progress="${section.id}" data-percent="50">学习中</button>
                 <button class="small" data-progress="${section.id}" data-percent="100">标记完成</button>
-              </div>
-            ` : ''}
+              `}
+            </div>
           </div>
         `).join('') || '<p class="muted">还没有任务点。</p>'}
       </div>
@@ -1290,6 +1406,30 @@ document.addEventListener('click', async (event) => {
     }
     if (button.dataset.action === 'logout') logout();
     if (button.dataset.action === 'refresh') await refresh();
+    if (button.dataset.action === 'wechat-demo') {
+      setMessage('微信一键登录暂作演示入口，请使用演示账号登录。');
+      return;
+    }
+    if (button.dataset.action === 'focus-courses') {
+      state.view = 'courses';
+      state.selectedCourse = null;
+      state.courseTool = 'overview';
+      await refresh();
+      requestAnimationFrame(() => document.querySelector('#teacher-courses-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      return;
+    }
+    if (button.dataset.action === 'focus-create') {
+      state.view = 'courses';
+      state.selectedCourse = null;
+      await refresh();
+      requestAnimationFrame(() => document.querySelector('#quick-create-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      return;
+    }
+    if (button.dataset.action === 'focus-section-form') {
+      document.querySelector('#section-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.querySelector('#section-form input[name="title"]')?.focus();
+      return;
+    }
     if (button.dataset.view) {
       state.view = button.dataset.view;
       state.selectedCourse = null;
@@ -1314,6 +1454,31 @@ document.addEventListener('click', async (event) => {
       await refresh();
       setMessage('课程已删除');
       return;
+    }
+
+    if (button.dataset.sectionAction) {
+      const sectionTitle = button.dataset.sectionTitle || '这个任务点';
+      if (button.dataset.sectionAction === 'assign') {
+        state.courseTool = 'assignments';
+        render();
+        setMessage('已切换到作业管理，可为“' + sectionTitle + '”布置作业。');
+        return;
+      }
+      if (button.dataset.sectionAction === 'view') {
+        state.courseTool = 'materials';
+        render();
+        setMessage('已切换到资料库查看“' + sectionTitle + '”。');
+        return;
+      }
+      if (button.dataset.sectionAction === 'edit') {
+        document.querySelector('#section-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setMessage('可在任务点表单中调整“' + sectionTitle + '”的资料信息。');
+        return;
+      }
+      if (button.dataset.sectionAction === 'offline') {
+        setMessage('演示版暂使用课程级发布控制，如需隐藏“' + sectionTitle + '”可先删除或下架整门课程。');
+        return;
+      }
     }
 
     if (button.dataset.deleteSection) {
